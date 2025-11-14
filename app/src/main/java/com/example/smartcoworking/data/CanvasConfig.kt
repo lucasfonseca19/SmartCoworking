@@ -10,15 +10,15 @@ import com.example.smartcoworking.data.models.PosicaoCanvas
 /**
  * Configurações globais do canvas do mapa de coworking
  *
- * Define as dimensões fixas do canvas (1200x800px) sem responsividade.
- * Scroll horizontal será implementado futuramente.
+ * Define as dimensões fixas do canvas (1500x900px) sem responsividade.
+ * Scroll horizontal e zoom serão implementados futuramente.
  */
 object CanvasConfig {
     /** Largura total do canvas em pixels */
-    const val LARGURA = 1200f
+    const val LARGURA = 1500f
 
     /** Altura total do canvas em pixels */
-    const val ALTURA = 800f
+    const val ALTURA = 900f
 
     /** Margem lateral (esquerda/direita) em pixels */
     const val MARGEM_LATERAL = 50f
@@ -39,57 +39,87 @@ object CanvasConfig {
 
 /**
  * Dimensões padrão de cada tipo de estação
+ * Valores baseados no design do Figma (1500x900px)
+ *
+ * AJUSTE AQUI para alterar os tamanhos de todas as estações globalmente
  */
 object TamanhosEstacao {
-    /** Tamanho do lado das mesas individuais quadradas */
-    const val INDIVIDUAL_SIZE = 80f
+    /** Tamanho do lado das mesas individuais quadradas (90x90 no Figma) */
+    const val INDIVIDUAL_SIZE = 90f
 
-    /** Diâmetro das mesas colaborativas circulares */
-    const val COLABORATIVA_DIAMETER = 110f
+    /** Diâmetro das mesas colaborativas circulares (150x150 no Figma) */
+    const val COLABORATIVA_DIAMETER = 150f
 
-    /** Dimensões das salas retangulares (largura x altura) */
-    val SALA_SIZE = DimensoesCanvas(120f, 160f)
+    /** Dimensões padrão das salas retangulares (largura x altura) */
+    val SALA_SIZE = DimensoesCanvas(204f, 300f)
 
-    /** Dimensões da área de descanso central - Grande retângulo vertical */
-    val AREA_DESCANSO = DimensoesCanvas(280f, 550f)
+    /** Dimensões da área de descanso central (720,150 - 210x570 no Figma) */
+    val AREA_DESCANSO = DimensoesCanvas(300f, 700f)
 }
 
 // ============================================================================
-// ZONAS DO LAYOUT
+// POSICIONAMENTO DAS ESTAÇÕES
 // ============================================================================
 
 /**
- * Posições X fixas para cada zona vertical do layout
+ * Posicionamento de todas as estações no mapa
+ * Valores baseados no design do Figma (1500x900px)
+ *
+ * AJUSTE AQUI para alterar as posições de todas as estações globalmente
  */
-object ZonasX {
-    /** Parede esquerda - Estações individuais (quase grudadas na parede) */
-    const val PAREDE_ESQUERDA = 20f
+object PosicionamentoEstacoes {
 
-    /** Centro-esquerda - Mesas colaborativas (coluna 1) */
-    const val COLABORATIVAS_COL1 = 200f
+    // ZONA 1: Parede Esquerda (5 mesas individuais verticais)
+    object ParedeEsquerda {
+        const val X = 30f
+        val POSICOES_Y = listOf(180f, 300f, 420f, 540f, 660f)
+    }
 
-    /** Centro-esquerda - Mesas colaborativas (coluna 2) */
-    const val COLABORATIVAS_COL2 = 330f
+    // ZONA 2: Mesas Colaborativas (4 círculos)
+    object MesasColaborativas {
+        val POSICOES = listOf(
+            Pair(240f, 180f),
+            Pair(450f, 300f),
+            Pair(240f, 425f),
+            Pair(450f, 540f)
+        )
+    }
 
-    /** Centro - Início da área de descanso */
-    const val AREA_DESCANSO_X = 480f
+    // ZONA 3: Topo (4 mesas individuais horizontais)
+    object Topo {
+        const val Y = 30f
+        val POSICOES_X = listOf(180f, 300f, 420f, 540f)
+    }
 
-    /** Centro-direita - Estações individuais coluna central (à direita da área de descanso) */
-    const val COLUNA_CENTRAL = 800f
+    // ZONA 4: Fundo (4 mesas individuais horizontais)
+    object Fundo {
+        const val Y = 780f
+        val POSICOES_X = listOf(180f, 300f, 420f, 540f)
+    }
 
-    /** Parede direita - Salas de reunião (mais próximas) */
-    const val PAREDE_DIREITA = 1000f
-}
+    // ZONA 5: Coluna Centro-Direita (5 mesas individuais verticais)
+    object ColunaDireita {
+        const val X = 1050f
+        val POSICOES_Y = listOf(150f, 270f, 390f, 510f, 630f)
+    }
 
-/**
- * Posições Y comuns usadas no layout
- */
-object ZonasY {
-    /** Linha de estações na parte inferior (perto da entrada) */
-    const val PAREDE_INFERIOR = 700f
+    // ZONA 6: Salas de Reunião (3 retângulos)
+    object SalasReuniao {
+        const val X = 1260f
+        // Triple(Y, Largura, Altura)
+        val DADOS = listOf(
+            Triple(63f, 204f, 229f),
+            Triple(305f, 204f, 230f),
+            Triple(547f, 204f, 230f)
+        )
+    }
 
-    /** Centro vertical da área de descanso (centralizada na altura do canvas) */
-    const val AREA_DESCANSO_Y = 125f
+    // Área Especial: Área de Descanso
+    object AreaDescanso {
+        const val X = 720f
+        const val Y = 80f
+        // Dimensões vêm de TamanhosEstacao.AREA_DESCANSO
+    }
 }
 
 // ============================================================================
@@ -99,6 +129,7 @@ object ZonasY {
 /**
  * Posições de referência para cálculo dos dados dos sensores.
  * Janelas nas laterais afetam temperatura, área de descanso afeta ruído.
+ * Valores baseados no layout do Figma (1500x900px)
  */
 object ReferenciasEspaciais {
     /**
@@ -106,17 +137,17 @@ object ReferenciasEspaciais {
      * Estações próximas tendem a ter temperatura maior devido ao sol
      */
     val JANELAS = listOf(
-        PosicaoCanvas(0f, CanvasConfig.ALTURA / 2),      // Janela esquerda
-        PosicaoCanvas(CanvasConfig.LARGURA, CanvasConfig.ALTURA / 2)  // Janela direita
+        PosicaoCanvas(0f, 450f),      // Janela esquerda (meio da altura)
+        PosicaoCanvas(1500f, 450f)    // Janela direita (meio da altura)
     )
 
     /**
-     * Centro da área de descanso
+     * Centro da área de descanso (calculado dinamicamente)
      * Estações próximas tendem a ter maior nível de ruído
      */
     val CENTRO_AREA_DESCANSO = PosicaoCanvas(
-        ZonasX.AREA_DESCANSO_X + TamanhosEstacao.AREA_DESCANSO.largura / 2,
-        ZonasY.AREA_DESCANSO_Y + TamanhosEstacao.AREA_DESCANSO.altura / 2
+        PosicionamentoEstacoes.AreaDescanso.X + TamanhosEstacao.AREA_DESCANSO.largura / 2,
+        PosicionamentoEstacoes.AreaDescanso.Y + TamanhosEstacao.AREA_DESCANSO.altura / 2
     )
 
     /**

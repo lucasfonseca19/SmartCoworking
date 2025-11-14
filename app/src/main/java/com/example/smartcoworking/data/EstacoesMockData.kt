@@ -18,14 +18,16 @@ import kotlin.random.Random
 object EstacoesMockData {
 
     /**
-     * Retorna todas as estações de trabalho mockadas (26 estações)
+     * Retorna todas as estações de trabalho mockadas (25 estações)
+     * Posições baseadas no design do Figma (1500x900px)
      *
      * Distribuição:
-     * - 5 individuais na parede esquerda
-     * - 5 colaborativas no centro-esquerda
-     * - 5 individuais na parede inferior (deslocadas para direita - porta)
-     * - 6 individuais na coluna central (à direita da área de descanso)
-     * - 4 salas na parede direita
+     * - 5 individuais na parede esquerda (vertical)
+     * - 4 mesas colaborativas no centro-esquerda
+     * - 4 individuais no topo
+     * - 4 individuais no fundo
+     * - 5 individuais na coluna centro-direita (vertical)
+     * - 3 salas de reunião na parede direita
      * - 1 área de descanso central (retornada separadamente)
      *
      * Status: ~60% livre, ~20% ocupado, ~20% reservado
@@ -35,86 +37,69 @@ object EstacoesMockData {
         val estacoes = mutableListOf<EstacaoDeTrabalho>()
 
         // ZONA 1: Parede Esquerda - 5 Estações Individuais
-        val yPosicoesParedeEsquerda = listOf(80f, 190f, 300f, 410f, 520f)
-        yPosicoesParedeEsquerda.forEach { y ->
+        PosicionamentoEstacoes.ParedeEsquerda.POSICOES_Y.forEach { y ->
             estacoes.add(
                 criarEstacaoIndividual(
                     numero = numeroSequencial++,
-                    x = ZonasX.PAREDE_ESQUERDA,
+                    x = PosicionamentoEstacoes.ParedeEsquerda.X,
                     y = y
                 )
             )
         }
 
-        // ZONA 2: Centro-Esquerda - 5 Mesas Colaborativas (arranjo colmeia)
-        estacoes.add(
-            criarEstacaoColaborativa(
-                numero = numeroSequencial++,
-                x = ZonasX.COLABORATIVAS_COL1,
-                y = 130f
+        // ZONA 2: Centro-Esquerda - 4 Mesas Colaborativas
+        PosicionamentoEstacoes.MesasColaborativas.POSICOES.forEach { (x, y) ->
+            estacoes.add(
+                criarEstacaoColaborativa(
+                    numero = numeroSequencial++,
+                    x = x,
+                    y = y
+                )
             )
-        )
-        estacoes.add(
-            criarEstacaoColaborativa(
-                numero = numeroSequencial++,
-                x = ZonasX.COLABORATIVAS_COL1,
-                y = 280f
-            )
-        )
-        estacoes.add(
-            criarEstacaoColaborativa(
-                numero = numeroSequencial++,
-                x = ZonasX.COLABORATIVAS_COL1,
-                y = 430f
-            )
-        )
-        estacoes.add(
-            criarEstacaoColaborativa(
-                numero = numeroSequencial++,
-                x = ZonasX.COLABORATIVAS_COL2,
-                y = 205f
-            )
-        )
-        estacoes.add(
-            criarEstacaoColaborativa(
-                numero = numeroSequencial++,
-                x = ZonasX.COLABORATIVAS_COL2,
-                y = 355f
-            )
-        )
+        }
 
-        // ZONA 3: Parede Inferior - 5 Estações Individuais (deslocadas para direita - porta à esquerda)
-        val xPosicoesParedeInferior = listOf(200f, 310f, 420f, 530f, 640f)
-        xPosicoesParedeInferior.forEach { x ->
+        // ZONA 3: Topo - 4 Estações Individuais
+        PosicionamentoEstacoes.Topo.POSICOES_X.forEach { x ->
             estacoes.add(
                 criarEstacaoIndividual(
                     numero = numeroSequencial++,
                     x = x,
-                    y = ZonasY.PAREDE_INFERIOR
+                    y = PosicionamentoEstacoes.Topo.Y
                 )
             )
         }
 
-        // ZONA 4: Coluna Central - 6 Estações Individuais (sem gap)
-        val yPosicoesColunaCentral = listOf(80f, 190f, 300f, 410f, 520f, 630f)
-        yPosicoesColunaCentral.forEach { y ->
+        // ZONA 4: Fundo - 4 Estações Individuais
+        PosicionamentoEstacoes.Fundo.POSICOES_X.forEach { x ->
             estacoes.add(
                 criarEstacaoIndividual(
                     numero = numeroSequencial++,
-                    x = ZonasX.COLUNA_CENTRAL,
+                    x = x,
+                    y = PosicionamentoEstacoes.Fundo.Y
+                )
+            )
+        }
+
+        // ZONA 5: Coluna Centro-Direita - 5 Estações Individuais
+        PosicionamentoEstacoes.ColunaDireita.POSICOES_Y.forEach { y ->
+            estacoes.add(
+                criarEstacaoIndividual(
+                    numero = numeroSequencial++,
+                    x = PosicionamentoEstacoes.ColunaDireita.X,
                     y = y
                 )
             )
         }
 
-        // ZONA 5: Parede Direita - 4 Salas de Reunião (ajustadas para novo tamanho)
-        val yPosicoesSalas = listOf(80f, 270f, 460f, 650f)
-        yPosicoesSalas.forEach { y ->
+        // ZONA 6: Parede Direita - 3 Salas de Reunião
+        PosicionamentoEstacoes.SalasReuniao.DADOS.forEach { (y, largura, altura) ->
             estacoes.add(
                 criarSala(
                     numero = numeroSequencial++,
-                    x = ZonasX.PAREDE_DIREITA,
-                    y = y
+                    x = PosicionamentoEstacoes.SalasReuniao.X,
+                    y = y,
+                    largura = largura,
+                    altura = altura
                 )
             )
         }
@@ -125,14 +110,15 @@ object EstacoesMockData {
 
     /**
      * Retorna áreas especiais não reserváveis
+     * Usa constantes centralizadas de CanvasConfig
      */
     fun obterAreasEspeciais(): List<AreaEspecial> = listOf(
         AreaEspecial(
             id = "AREA-001",
             label = "Área de Descanso",
             posicao = PosicaoCanvas(
-                x = ZonasX.AREA_DESCANSO_X,
-                y = ZonasY.AREA_DESCANSO_Y
+                x = PosicionamentoEstacoes.AreaDescanso.X,
+                y = PosicionamentoEstacoes.AreaDescanso.Y
             ),
             dimensoes = TamanhosEstacao.AREA_DESCANSO
         )
@@ -202,7 +188,9 @@ object EstacoesMockData {
     private fun criarSala(
         numero: Int,
         x: Float,
-        y: Float
+        y: Float,
+        largura: Float = TamanhosEstacao.SALA_SIZE.largura,
+        altura: Float = TamanhosEstacao.SALA_SIZE.altura
     ): EstacaoDeTrabalho {
         val posicao = PosicaoCanvas(x, y)
 
@@ -215,7 +203,7 @@ object EstacoesMockData {
             status = StatusEstacao.LIVRE, // Será redistribuído depois
             leituraSensor = gerarLeituraSensor(posicao),
             posicao = posicao,
-            dimensoes = TamanhosEstacao.SALA_SIZE,
+            dimensoes = DimensoesCanvas(largura, altura),
             forma = FormaEstacao.RETANGULO
         )
     }

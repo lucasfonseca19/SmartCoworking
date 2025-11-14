@@ -53,6 +53,8 @@ fun MapaCoworkingCanvas(
         // Calcular escala para adaptar coordenadas 1200x800 ao tamanho real
         val escalaX = size.width / CanvasConfig.LARGURA
         val escalaY = size.height / CanvasConfig.ALTURA
+        // Usar uma escala média para elementos não-dimensionais como bordas e raios
+        val escala = (escalaX + escalaY) / 2f
 
         // ====================================================================
         // PASSO 1: Desenhar fundo do canvas
@@ -80,22 +82,10 @@ fun MapaCoworkingCanvas(
                 color = Color(0xFFE0E0E0),
                 topLeft = posicaoEscalada,
                 size = dimensoesEscaladas,
-                cornerRadius = CornerRadius(8f * escalaX)
+                cornerRadius = CornerRadius(8f * escala)
             )
 
             // Padrão hachurado cruzado
-            val areaPath = Path().apply {
-                addRoundRect(
-                    androidx.compose.ui.geometry.RoundRect(
-                        left = posicaoEscalada.x,
-                        top = posicaoEscalada.y,
-                        right = posicaoEscalada.x + dimensoesEscaladas.width,
-                        bottom = posicaoEscalada.y + dimensoesEscaladas.height,
-                        cornerRadius = CornerRadius(8f * escalaX)
-                    )
-                )
-            }
-
             translate(posicaoEscalada.x, posicaoEscalada.y) {
                 desenharPadraoHachuradoCruzado(
                     path = Path().apply {
@@ -105,27 +95,29 @@ fun MapaCoworkingCanvas(
                                 top = 0f,
                                 right = dimensoesEscaladas.width,
                                 bottom = dimensoesEscaladas.height,
-                                cornerRadius = CornerRadius(8f * escalaX)
+                                cornerRadius = CornerRadius(8f * escala)
                             )
                         )
                     },
                     color = Color.Gray,
-                    spacing = 12f * escalaX,
-                    opacity = 0.1f
+                    spacing = 12f * escala,
+                    opacity = 0.1f,
+                    strokeWidth = 1f * escala
                 )
             }
 
             // Borda
+            val borderWidth = 2f * escala
             drawRoundRect(
                 color = Color.Gray.copy(alpha = 0.4f),
-                topLeft = posicaoEscalada + Offset(1f, 1f),
-                size = Size(dimensoesEscaladas.width - 2f, dimensoesEscaladas.height - 2f),
-                cornerRadius = CornerRadius(8f * escalaX - 1f),
-                style = Stroke(width = 2f)
+                topLeft = posicaoEscalada + Offset(borderWidth / 2, borderWidth / 2),
+                size = Size(dimensoesEscaladas.width - borderWidth, dimensoesEscaladas.height - borderWidth),
+                cornerRadius = CornerRadius(8f * escala - (borderWidth / 2)),
+                style = Stroke(width = borderWidth)
             )
 
             // Label da área
-            val fontSize = (12f * ((escalaX + escalaY) / 2f)).sp
+            val fontSize = (12f * escala).sp
             val textLayoutResult = textMeasurer.measure(
                 text = area.label,
                 style = TextStyle(
@@ -141,34 +133,6 @@ fun MapaCoworkingCanvas(
                 )
             )
         }
-
-        // ====================================================================
-        // PASSO 3: Desenhar labels decorativas (JANELA)
-        // ====================================================================
-        val labelJanelaStyle = TextStyle(
-            fontSize = (14f * ((escalaX + escalaY) / 2f)).sp,
-            color = Color.Gray.copy(alpha = 0.5f)
-        )
-
-        // Janela esquerda (vertical)
-        val janelaEsqText = textMeasurer.measure("JANELA", labelJanelaStyle)
-        drawText(
-            textLayoutResult = janelaEsqText,
-            topLeft = Offset(
-                x = 10f * escalaX,
-                y = (CanvasConfig.ALTURA / 2) * escalaY - janelaEsqText.size.height / 2
-            )
-        )
-
-        // Janela direita (vertical)
-        val janelaDirText = textMeasurer.measure("JANELA", labelJanelaStyle)
-        drawText(
-            textLayoutResult = janelaDirText,
-            topLeft = Offset(
-                x = (CanvasConfig.LARGURA - 80f) * escalaX,
-                y = (CanvasConfig.ALTURA / 2) * escalaY - janelaDirText.size.height / 2
-            )
-        )
 
         // ====================================================================
         // PASSO 4: Renderizar todas as estações
@@ -203,6 +167,9 @@ fun MapaCoworkingCanvas(
                     endY = dimensoesEscaladas.height
                 )
 
+                val borderWidth = 1f * escala
+                val cornerRadiusPx = 8f * escala
+
                 // Desenhar forma baseada no tipo
                 when (estacao.forma) {
                     FormaEstacao.QUADRADO -> {
@@ -211,16 +178,16 @@ fun MapaCoworkingCanvas(
                             brush = gradientBrush,
                             topLeft = Offset.Zero,
                             size = dimensoesEscaladas,
-                            cornerRadius = CornerRadius(8f * escalaX)
+                            cornerRadius = CornerRadius(cornerRadiusPx)
                         )
 
                         // Borda
                         drawRoundRect(
                             color = Color.Black.copy(alpha = 0.2f),
-                            topLeft = Offset(1f, 1f),
-                            size = Size(dimensoesEscaladas.width - 2f, dimensoesEscaladas.height - 2f),
-                            cornerRadius = CornerRadius(8f * escalaX - 1f),
-                            style = Stroke(width = 1f)
+                            topLeft = Offset(borderWidth / 2, borderWidth / 2),
+                            size = Size(dimensoesEscaladas.width - borderWidth, dimensoesEscaladas.height - borderWidth),
+                            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidth / 2)),
+                            style = Stroke(width = borderWidth)
                         )
 
                         // Aplicar padrão visual
@@ -231,16 +198,16 @@ fun MapaCoworkingCanvas(
                                     top = 0f,
                                     right = dimensoesEscaladas.width,
                                     bottom = dimensoesEscaladas.height,
-                                    cornerRadius = CornerRadius(8f * escalaX)
+                                    cornerRadius = CornerRadius(cornerRadiusPx)
                                 )
                             )
                         }
 
                         when (estacao.status) {
                             com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escalaX)
+                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala, strokeWidth = 1.5f * escala)
                             com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escalaX)
+                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala, dotRadius = 2f * escala)
                             else -> { /* Livre não tem padrão */ }
                         }
                     }
@@ -259,9 +226,9 @@ fun MapaCoworkingCanvas(
                         // Borda
                         drawCircle(
                             color = Color.Black.copy(alpha = 0.2f),
-                            radius = radius - 1f,
+                            radius = radius - (borderWidth / 2),
                             center = center,
-                            style = Stroke(width = 1f)
+                            style = Stroke(width = borderWidth)
                         )
 
                         // Aplicar padrão visual
@@ -278,9 +245,9 @@ fun MapaCoworkingCanvas(
 
                         when (estacao.status) {
                             com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escalaX)
+                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala, strokeWidth = 1.5f * escala)
                             com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escalaX)
+                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala, dotRadius = 2f * escala)
                             else -> { /* Livre não tem padrão */ }
                         }
                     }
@@ -291,16 +258,16 @@ fun MapaCoworkingCanvas(
                             brush = gradientBrush,
                             topLeft = Offset.Zero,
                             size = dimensoesEscaladas,
-                            cornerRadius = CornerRadius(8f * escalaX)
+                            cornerRadius = CornerRadius(cornerRadiusPx)
                         )
 
                         // Borda
                         drawRoundRect(
                             color = Color.Black.copy(alpha = 0.2f),
-                            topLeft = Offset(1f, 1f),
-                            size = Size(dimensoesEscaladas.width - 2f, dimensoesEscaladas.height - 2f),
-                            cornerRadius = CornerRadius(8f * escalaX - 1f),
-                            style = Stroke(width = 1f)
+                            topLeft = Offset(borderWidth / 2, borderWidth / 2),
+                            size = Size(dimensoesEscaladas.width - borderWidth, dimensoesEscaladas.height - borderWidth),
+                            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidth / 2)),
+                            style = Stroke(width = borderWidth)
                         )
 
                         // Aplicar padrão visual
@@ -311,16 +278,16 @@ fun MapaCoworkingCanvas(
                                     top = 0f,
                                     right = dimensoesEscaladas.width,
                                     bottom = dimensoesEscaladas.height,
-                                    cornerRadius = CornerRadius(8f * escalaX)
+                                    cornerRadius = CornerRadius(cornerRadiusPx)
                                 )
                             )
                         }
 
                         when (estacao.status) {
                             com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escalaX)
+                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala, strokeWidth = 1.5f * escala)
                             com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escalaX)
+                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala, dotRadius = 2f * escala)
                             else -> { /* Livre não tem padrão */ }
                         }
                     }

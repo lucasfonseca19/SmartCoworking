@@ -20,7 +20,8 @@ fun DrawScope.desenharPadraoHachurado(
     path: Path,
     color: Color,
     spacing: Float = 10f,
-    opacity: Float = 0.15f
+    opacity: Float = 0.15f,
+    strokeWidth: Float = 1.5f
 ) {
     clipPath(path) {
         // Calcula quantas linhas precisamos para cobrir toda a área
@@ -34,7 +35,7 @@ fun DrawScope.desenharPadraoHachurado(
                 color = color.copy(alpha = opacity),
                 start = Offset(offset, 0f),
                 end = Offset(offset + size.height, size.height),
-                strokeWidth = 1.5f
+                strokeWidth = strokeWidth
             )
         }
     }
@@ -92,7 +93,8 @@ fun DrawScope.desenharPadraoHachuradoCruzado(
     path: Path,
     color: Color,
     spacing: Float = 12f,
-    opacity: Float = 0.1f
+    opacity: Float = 0.1f,
+    strokeWidth: Float = 1f
 ) {
     clipPath(path) {
         // Desenha linhas horizontais
@@ -103,7 +105,7 @@ fun DrawScope.desenharPadraoHachuradoCruzado(
                 color = color.copy(alpha = opacity),
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
-                strokeWidth = 1f
+                strokeWidth = strokeWidth
             )
         }
 
@@ -115,7 +117,7 @@ fun DrawScope.desenharPadraoHachuradoCruzado(
                 color = color.copy(alpha = opacity),
                 start = Offset(x, 0f),
                 end = Offset(x, size.height),
-                strokeWidth = 1f
+                strokeWidth = strokeWidth
             )
         }
     }
