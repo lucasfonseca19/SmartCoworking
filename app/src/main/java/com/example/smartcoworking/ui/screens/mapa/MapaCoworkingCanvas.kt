@@ -139,51 +139,75 @@ fun MapaCoworkingCanvas(
 
             // Usar translate para posicionar o desenho
             translate(posicaoEscalada.x, posicaoEscalada.y) {
-                // Criar gradiente para sombreamento
-                val gradientBrush = createDepthGradient(color)
-
+                // =================================================
+                // NOVOS EFEITOS VISUAIS
+                // =================================================
+                val shadowOffset = Offset(3f * escala, 3f * escala)
+                val shadowColor = Color.Black.copy(alpha = 0.25f)
                 val borderWidth = DrawingConstants.DEFAULT_BORDER_WIDTH_DP * escala * conteudoEscala
                 val cornerRadiusPx = DrawingConstants.DEFAULT_CORNER_RADIUS_DP * escala * conteudoEscala
 
-                // Desenhar forma baseada no tipo
+                // PASSO 1: Desenhar Sombra (Drop Shadow)
                 when (estacao.forma) {
                     FormaEstacao.QUADRADO, FormaEstacao.RETANGULO -> {
-                        // Fundo com gradiente
+                        drawRoundRect(
+                            color = shadowColor,
+                            topLeft = shadowOffset,
+                            size = dimensoesEscaladas,
+                            cornerRadius = CornerRadius(cornerRadiusPx)
+                        )
+                    }
+                    FormaEstacao.CIRCULO -> {
+                        val radius = dimensoesEscaladas.width / 2
+                        drawCircle(
+                            color = shadowColor,
+                            radius = radius,
+                            center = Offset(radius, radius) + shadowOffset
+                        )
+                    }
+                }
+
+                // PASSO 2: Desenhar Fundo com Gradiente Polido
+                val gradientBrush = createPolishedGradient(color)
+                when (estacao.forma) {
+                    FormaEstacao.QUADRADO, FormaEstacao.RETANGULO -> {
                         drawRoundRect(
                             brush = gradientBrush,
                             topLeft = Offset.Zero,
                             size = dimensoesEscaladas,
                             cornerRadius = CornerRadius(cornerRadiusPx)
                         )
+                    }
+                    FormaEstacao.CIRCULO -> {
+                        val radius = dimensoesEscaladas.width / 2
+                        drawCircle(
+                            brush = gradientBrush,
+                            radius = radius,
+                            center = Offset(radius, radius)
+                        )
+                    }
+                }
 
-                        // Borda
-                        drawBorderRoundRect(
+                // PASSO 3: Desenhar Borda Chanfrada (Beveled)
+                when (estacao.forma) {
+                    FormaEstacao.QUADRADO, FormaEstacao.RETANGULO -> {
+                        drawBeveledBorder(
                             size = dimensoesEscaladas,
                             borderWidth = borderWidth,
                             cornerRadius = cornerRadiusPx
                         )
                     }
-
                     FormaEstacao.CIRCULO -> {
                         val radius = dimensoesEscaladas.width / 2
-                        val center = Offset(radius, radius)
-
-                        // Círculo com gradiente
-                        drawCircle(
-                            brush = gradientBrush,
+                        drawBeveledBorder(
                             radius = radius,
-                            center = center
-                        )
-
-                        // Borda
-                        drawBorderCircle(
-                            radius = radius,
-                            center = center,
+                            center = Offset(radius, radius),
                             borderWidth = borderWidth
                         )
                     }
                 }
 
+                // PASSO 4: Desenhar Número da Estação (sem alteração)
                 val centerLocal = Offset(
                     dimensoesEscaladas.width / 2,
                     dimensoesEscaladas.height / 2
@@ -193,7 +217,6 @@ fun MapaCoworkingCanvas(
                     DrawingConstants.MIN_FONT_SIZE
                 )
 
-                // OTIMIZAÇÃO: Usa cache para evitar measure() repetidos
                 val cacheKey = estacao.numero to fontSizeSp
                 val textLayoutResult = textLayoutCache.getOrPut(cacheKey) {
                     textMeasurer.measure(
