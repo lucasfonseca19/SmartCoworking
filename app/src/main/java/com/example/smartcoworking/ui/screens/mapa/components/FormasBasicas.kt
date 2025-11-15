@@ -83,11 +83,7 @@ fun DesenharEstacaoQuadrada(
             cornerRadius = cornerRadiusPx
         )
 
-        // PASSO 4: Aplicar padrão visual (acessibilidade)
-        val shapePath = createRoundRectPath(cornerRadius = cornerRadiusPx)
-        aplicarPadraoStatus(shapePath, status)
-
-        // PASSO 5: Desenhar número da estação
+        // PASSO 4: Desenhar número da estação
         desenharNumeroEstacao(
             numero = numero,
             center = center,
@@ -158,7 +154,6 @@ fun DesenharEstacaoCircular(
                 )
             )
         }
-        aplicarPadraoStatus(shapePath, status)
 
         // PASSO 5: Desenhar número
         desenharNumeroEstacao(
@@ -225,11 +220,7 @@ fun DesenharEstacaoRetangular(
             cornerRadius = cornerRadiusPx
         )
 
-        // PASSO 4: Aplicar padrão visual
-        val shapePath = createRoundRectPath(cornerRadius = cornerRadiusPx)
-        aplicarPadraoStatus(shapePath, status)
-
-        // PASSO 5: Desenhar número
+        // PASSO 4: Desenhar número
         desenharNumeroEstacao(
             numero = numero,
             center = center,

@@ -14,8 +14,17 @@ import kotlin.random.Random
  *
  * Gera 25 estações distribuídas pelo layout do coworking, com sensores
  * calculados baseados na posição espacial (proximidade de janelas, área de descanso).
+ *
+ * OTIMIZAÇÃO: Usa cache para evitar recálculos pesados e distanceCache para sqrt()
  */
 object EstacoesMockData {
+
+    // Cache para evitar reprocessar dados mockados
+    private var cachedEstacoes: List<EstacaoDeTrabalho>? = null
+    private var cachedAreasEspeciais: List<AreaEspecial>? = null
+
+    // Cache de distâncias para evitar cálculos repetidos de sqrt()
+    private val distanceCache = mutableMapOf<Pair<PosicaoCanvas, PosicaoCanvas>, Float>()
 
     /**
      * Retorna todas as estações de trabalho mockadas (25 estações)
@@ -31,8 +40,14 @@ object EstacoesMockData {
      * - 1 área de descanso central (retornada separadamente)
      *
      * Status: ~60% livre, ~20% ocupado, ~20% reservado
+     *
+     * OTIMIZAÇÃO: Resultados são cacheados após primeira geração
      */
     fun obterEstacoes(): List<EstacaoDeTrabalho> {
+        // Retorna cache se já foi gerado
+        cachedEstacoes?.let { return it }
+
+        // Gera dados pela primeira vez
         var numeroSequencial = 1
         val estacoes = mutableListOf<EstacaoDeTrabalho>()
 
@@ -105,24 +120,37 @@ object EstacoesMockData {
         }
 
         // Aplicar distribuição de status (~60% livre, 20% ocupado, 20% reservado)
-        return aplicarDistribuicaoStatus(estacoes)
+        val resultado = aplicarDistribuicaoStatus(estacoes)
+
+        // Cachear resultado
+        cachedEstacoes = resultado
+        return resultado
     }
 
     /**
      * Retorna áreas especiais não reserváveis
      * Usa constantes centralizadas de CanvasConfig
+     *
+     * OTIMIZAÇÃO: Resultados são cacheados
      */
-    fun obterAreasEspeciais(): List<AreaEspecial> = listOf(
-        AreaEspecial(
-            id = "AREA-001",
-            label = "Área de Descanso",
-            posicao = PosicaoCanvas(
-                x = PosicionamentoEstacoes.AreaDescanso.X,
-                y = PosicionamentoEstacoes.AreaDescanso.Y
-            ),
-            dimensoes = TamanhosEstacao.AREA_DESCANSO
+    fun obterAreasEspeciais(): List<AreaEspecial> {
+        cachedAreasEspeciais?.let { return it }
+
+        val resultado = listOf(
+            AreaEspecial(
+                id = "AREA-001",
+                label = "Área de Descanso",
+                posicao = PosicaoCanvas(
+                    x = PosicionamentoEstacoes.AreaDescanso.X,
+                    y = PosicionamentoEstacoes.AreaDescanso.Y
+                ),
+                dimensoes = TamanhosEstacao.AREA_DESCANSO
+            )
         )
-    )
+
+        cachedAreasEspeciais = resultado
+        return resultado
+    }
 
     // ========================================================================
     // FUNÇÕES AUXILIARES - CRIAÇÃO DE ESTAÇÕES
@@ -309,11 +337,17 @@ object EstacoesMockData {
 
     /**
      * Calcula distância euclidiana entre duas posições
+     *
+     * OTIMIZAÇÃO: Usa cache para evitar recálculos de sqrt()
+     * Reduz 125+ chamadas de sqrt() para apenas as únicas necessárias
      */
     private fun calcularDistancia(p1: PosicaoCanvas, p2: PosicaoCanvas): Float {
-        val dx = p2.x - p1.x
-        val dy = p2.y - p1.y
-        return sqrt(dx.pow(2) + dy.pow(2))
+        val key = p1 to p2
+        return distanceCache.getOrPut(key) {
+            val dx = p2.x - p1.x
+            val dy = p2.y - p1.y
+            sqrt(dx.pow(2) + dy.pow(2))
+        }
     }
 
     // ========================================================================

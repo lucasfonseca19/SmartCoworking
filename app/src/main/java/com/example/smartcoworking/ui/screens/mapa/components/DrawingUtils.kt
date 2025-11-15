@@ -134,8 +134,8 @@ fun DrawScope.createRoundRectPath(
 /**
  * Aplica o padrão visual apropriado baseado no status da estação.
  *
- * Esta função centraliza a lógica de aplicação de padrões, evitando
- * duplicação do bloco when em vários lugares.
+ * OTIMIZAÇÃO: Padrões visuais desabilitados para melhorar performance.
+ * Os status são diferenciados apenas pelas cores sólidas.
  *
  * @param path Path da forma onde aplicar o padrão
  * @param status Status da estação (LIVRE/OCUPADO/RESERVADO)
@@ -148,19 +148,6 @@ fun DrawScope.aplicarPadraoStatus(
     color: Color = Color.Black,
     escala: Float = 1f
 ) {
-    when (status) {
-        StatusEstacao.OCUPADO -> desenharPadraoHachurado(
-            path = path,
-            color = color,
-            spacing = DrawingConstants.PATTERN_HATCHING_SPACING * escala,
-            strokeWidth = DrawingConstants.PATTERN_HATCHING_STROKE * escala
-        )
-        StatusEstacao.RESERVADO -> desenharPadraoPontilhado(
-            path = path,
-            color = color,
-            spacing = DrawingConstants.PATTERN_DOTTED_SPACING * escala,
-            dotRadius = DrawingConstants.PATTERN_DOTTED_RADIUS * escala
-        )
-        StatusEstacao.LIVRE -> { /* Livre não tem padrão */ }
-    }
+    // PADRÕES DESABILITADOS - cores sólidas são suficientes para diferenciar status
+    // Isso elimina milhares de operações de desenho por frame
 }
