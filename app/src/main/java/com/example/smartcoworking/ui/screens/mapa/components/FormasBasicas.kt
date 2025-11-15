@@ -296,10 +296,6 @@ fun DesenharAreaNaoReservavel(
             )
         }
 
-        desenharPadraoHachuradoCruzado(
-            path = shapePath,
-            color = Color.Gray
-        )
 
         // PASSO 3: Desenhar borda
         drawRoundRect(

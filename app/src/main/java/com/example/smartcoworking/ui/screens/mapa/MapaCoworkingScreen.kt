@@ -1,6 +1,8 @@
 package com.example.smartcoworking.ui.screens.mapa
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
@@ -10,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartcoworking.data.CanvasConfig
 import com.example.smartcoworking.data.models.EstacaoDeTrabalho
 import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
 
@@ -101,14 +104,27 @@ fun MapaCoworkingScreen(
                     }
                 }
 
-                // Renderizar mapa
+                // Renderizar mapa com scroll horizontal
                 else -> {
-                    MapaCoworkingCanvas(
-                        estacoes = estacoes,
-                        areasEspeciais = areasEspeciais,
-                        modifier = Modifier.fillMaxSize(),
-                        onEstacaoClick = onEstacaoClick
-                    )
+                    BoxWithConstraints {
+                        val hScroll = rememberScrollState()
+                        val aspect = CanvasConfig.LARGURA / CanvasConfig.ALTURA
+                        val mapHeight = this.maxHeight
+                        val mapWidth = mapHeight * aspect
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .horizontalScroll(hScroll)
+                        ) {
+                            MapaCoworkingCanvas(
+                                estacoes = estacoes,
+                                areasEspeciais = areasEspeciais,
+                                modifier = Modifier.size(mapWidth, mapHeight),
+                                onEstacaoClick = onEstacaoClick
+                            )
+                        }
+                    }
                 }
             }
 
