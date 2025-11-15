@@ -55,19 +55,16 @@ fun MapaCoworkingCanvas(
     Canvas(modifier = modifier) {
         // Escala uniforme baseada na altura do container (preserva proporções 1500x900)
         val escala = size.height / CanvasConfig.ALTURA
-        val escalaX = escala
-        val escalaY = escala
-        val conteudoEscala = 0.85f
+        // Escala de conteúdo para criar um preenchimento (padding) em torno do mapa
+        val conteudoEscala = 0.95f // Aumentado de 0.85 para 0.95 para reduzir o padding excessivo
         val centerBase = Offset(CanvasConfig.LARGURA / 2f, CanvasConfig.ALTURA / 2f)
-        val compensateLeft = (CanvasConfig.LARGURA * (1f - conteudoEscala)) / 2f
+
+        // Função para escalar o conteúdo em direção ao centro, criando padding simétrico
         fun scaleAroundCenter(base: Offset): Offset {
             return Offset(
                 x = centerBase.x + (base.x - centerBase.x) * conteudoEscala,
                 y = centerBase.y + (base.y - centerBase.y) * conteudoEscala
             )
-        }
-        fun applyCompensations(o: Offset): Offset {
-            return Offset(o.x - compensateLeft, o.y)
         }
 
         // ====================================================================
@@ -83,7 +80,7 @@ fun MapaCoworkingCanvas(
         // ====================================================================
         areasEspeciais.forEach { area ->
             val posicaoBase = Offset(area.posicao.x, area.posicao.y)
-            val posicaoEscalada = applyCompensations(scaleAroundCenter(posicaoBase)) * escala
+            val posicaoEscalada = scaleAroundCenter(posicaoBase) * escala
             val dimensoesEscaladas = Size(
                 width = area.dimensoes.largura * escala * conteudoEscala,
                 height = area.dimensoes.altura * escala * conteudoEscala
@@ -134,7 +131,7 @@ fun MapaCoworkingCanvas(
             val color = MapColors.getStatusColor(estacao.status)
 
             val posicaoBase = Offset(estacao.posicao.x, estacao.posicao.y)
-            val posicaoEscalada = applyCompensations(scaleAroundCenter(posicaoBase)) * escala
+            val posicaoEscalada = scaleAroundCenter(posicaoBase) * escala
             val dimensoesEscaladas = Size(
                 width = estacao.dimensoes.largura * escala * conteudoEscala,
                 height = estacao.dimensoes.altura * escala * conteudoEscala
