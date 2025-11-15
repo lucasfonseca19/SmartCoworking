@@ -17,10 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.smartcoworking.data.CanvasConfig
 import com.example.smartcoworking.data.EstacoesMockData
 import com.example.smartcoworking.data.models.*
-import com.example.smartcoworking.ui.screens.mapa.components.StatusEstacao
-import com.example.smartcoworking.ui.screens.mapa.components.desenharPadraoHachurado
-import com.example.smartcoworking.ui.screens.mapa.components.desenharPadraoHachuradoCruzado
-import com.example.smartcoworking.ui.screens.mapa.components.desenharPadraoPontilhado
+import com.example.smartcoworking.ui.screens.mapa.components.*
 import com.example.smartcoworking.ui.theme.MapColors
 import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
 import androidx.compose.ui.geometry.CornerRadius
@@ -28,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.max
+import com.example.smartcoworking.ui.screens.mapa.components.desenharNumeroEstacao
 
 /**
  * Canvas principal do mapa de coworking.
@@ -148,11 +146,7 @@ fun MapaCoworkingCanvas(
         // PASSO 4: Renderizar todas as estações
         // ====================================================================
         estacoes.forEach { estacao ->
-            val cor = when (estacao.status) {
-                com.example.smartcoworking.data.models.StatusEstacao.LIVRE -> MapColors.StatusLivre
-                com.example.smartcoworking.data.models.StatusEstacao.OCUPADO -> MapColors.StatusOcupado
-                com.example.smartcoworking.data.models.StatusEstacao.RESERVADO -> MapColors.StatusReservado
-            }
+            val color = MapColors.getStatusColor(estacao.status)
 
             val posicaoBase = Offset(estacao.posicao.x, estacao.posicao.y)
             val posicaoEscalada = applyCompensations(scaleAroundCenter(posicaoBase)) * escala
@@ -164,23 +158,14 @@ fun MapaCoworkingCanvas(
             // Usar translate para posicionar o desenho
             translate(posicaoEscalada.x, posicaoEscalada.y) {
                 // Criar gradiente para sombreamento
-                val shadowColor = cor.copy(
-                    red = cor.red * 0.9f,
-                    green = cor.green * 0.9f,
-                    blue = cor.blue * 0.9f
-                )
-                val gradientBrush = Brush.verticalGradient(
-                    colors = listOf(shadowColor, cor),
-                    startY = 0f,
-                    endY = dimensoesEscaladas.height
-                )
+                val gradientBrush = createDepthGradient(color)
 
-                val borderWidth = 1f * escala * conteudoEscala
-                val cornerRadiusPx = 8f * escala * conteudoEscala
+                val borderWidth = DrawingConstants.DEFAULT_BORDER_WIDTH_DP * escala * conteudoEscala
+                val cornerRadiusPx = DrawingConstants.DEFAULT_CORNER_RADIUS_DP * escala * conteudoEscala
 
                 // Desenhar forma baseada no tipo
                 when (estacao.forma) {
-                    FormaEstacao.QUADRADO -> {
+                    FormaEstacao.QUADRADO, FormaEstacao.RETANGULO -> {
                         // Fundo com gradiente
                         drawRoundRect(
                             brush = gradientBrush,
@@ -190,34 +175,23 @@ fun MapaCoworkingCanvas(
                         )
 
                         // Borda
-                        drawRoundRect(
-                            color = Color.Black.copy(alpha = 0.2f),
-                            topLeft = Offset(borderWidth / 2, borderWidth / 2),
-                            size = Size(dimensoesEscaladas.width - borderWidth, dimensoesEscaladas.height - borderWidth),
-                            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidth / 2)),
-                            style = Stroke(width = borderWidth)
+                        drawBorderRoundRect(
+                            size = dimensoesEscaladas,
+                            borderWidth = borderWidth,
+                            cornerRadius = cornerRadiusPx
                         )
 
                         // Aplicar padrão visual
-                        val shapePath = Path().apply {
-                            addRoundRect(
-                                androidx.compose.ui.geometry.RoundRect(
-                                    left = 0f,
-                                    top = 0f,
-                                    right = dimensoesEscaladas.width,
-                                    bottom = dimensoesEscaladas.height,
-                                    cornerRadius = CornerRadius(cornerRadiusPx)
-                                )
-                            )
-                        }
-
-                        when (estacao.status) {
-                            com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala * conteudoEscala, strokeWidth = 1.5f * escala * conteudoEscala)
-                            com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala * conteudoEscala, dotRadius = 2f * escala * conteudoEscala)
-                            else -> { /* Livre não tem padrão */ }
-                        }
+                        val shapePath = createRoundRectPath(
+                            width = dimensoesEscaladas.width,
+                            height = dimensoesEscaladas.height,
+                            cornerRadius = cornerRadiusPx
+                        )
+                        aplicarPadraoStatus(
+                            path = shapePath,
+                            status = estacao.status,
+                            escala = escala * conteudoEscala
+                        )
                     }
 
                     FormaEstacao.CIRCULO -> {
@@ -232,11 +206,10 @@ fun MapaCoworkingCanvas(
                         )
 
                         // Borda
-                        drawCircle(
-                            color = Color.Black.copy(alpha = 0.2f),
-                            radius = radius - (borderWidth / 2),
+                        drawBorderCircle(
+                            radius = radius,
                             center = center,
-                            style = Stroke(width = borderWidth)
+                            borderWidth = borderWidth
                         )
 
                         // Aplicar padrão visual
@@ -250,84 +223,28 @@ fun MapaCoworkingCanvas(
                                 )
                             )
                         }
-
-                        when (estacao.status) {
-                            com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala * conteudoEscala, strokeWidth = 1.5f * escala * conteudoEscala)
-                            com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala * conteudoEscala, dotRadius = 2f * escala * conteudoEscala)
-                            else -> { /* Livre não tem padrão */ }
-                        }
-                    }
-
-                    FormaEstacao.RETANGULO -> {
-                        // Fundo com gradiente
-                        drawRoundRect(
-                            brush = gradientBrush,
-                            topLeft = Offset.Zero,
-                            size = dimensoesEscaladas,
-                            cornerRadius = CornerRadius(cornerRadiusPx)
+                        aplicarPadraoStatus(
+                            path = shapePath,
+                            status = estacao.status,
+                            escala = escala * conteudoEscala
                         )
-
-                        // Borda
-                        drawRoundRect(
-                            color = Color.Black.copy(alpha = 0.2f),
-                            topLeft = Offset(borderWidth / 2, borderWidth / 2),
-                            size = Size(dimensoesEscaladas.width - borderWidth, dimensoesEscaladas.height - borderWidth),
-                            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidth / 2)),
-                            style = Stroke(width = borderWidth)
-                        )
-
-                        // Aplicar padrão visual
-                        val shapePath = Path().apply {
-                            addRoundRect(
-                                androidx.compose.ui.geometry.RoundRect(
-                                    left = 0f,
-                                    top = 0f,
-                                    right = dimensoesEscaladas.width,
-                                    bottom = dimensoesEscaladas.height,
-                                    cornerRadius = CornerRadius(cornerRadiusPx)
-                                )
-                            )
-                        }
-
-                        when (estacao.status) {
-                            com.example.smartcoworking.data.models.StatusEstacao.OCUPADO ->
-                                desenharPadraoHachurado(shapePath, Color.Black, spacing = 10f * escala * conteudoEscala, strokeWidth = 1.5f * escala * conteudoEscala)
-                            com.example.smartcoworking.data.models.StatusEstacao.RESERVADO ->
-                                desenharPadraoPontilhado(shapePath, Color.Black, spacing = 8f * escala * conteudoEscala, dotRadius = 2f * escala * conteudoEscala)
-                            else -> { /* Livre não tem padrão */ }
-                        }
                     }
                 }
 
-                // Desenhar número da estação
-                val fontSize = max((dimensoesEscaladas.height / 5.5f), 12f).sp
-                val numeroText = textMeasurer.measure(
-                    text = estacao.numero.toString(),
-                    style = TextStyle(
-                        fontSize = fontSize,
-                        color = Color.White
-                    )
+                val centerLocal = Offset(
+                    dimensoesEscaladas.width / 2,
+                    dimensoesEscaladas.height / 2
                 )
-
-                val centerLocal = when (estacao.forma) {
-                    FormaEstacao.CIRCULO -> Offset(
-                        dimensoesEscaladas.width / 2,
-                        dimensoesEscaladas.height / 2
-                    )
-                    else -> Offset(
-                        dimensoesEscaladas.width / 2,
-                        dimensoesEscaladas.height / 2
-                    )
-                }
-
-                drawText(
-                    textLayoutResult = numeroText,
-                    topLeft = Offset(
-                        x = centerLocal.x - numeroText.size.width / 2,
-                        y = centerLocal.y - numeroText.size.height / 2
-                    )
+                val fontSizeSp = max(
+                    (dimensoesEscaladas.height / DrawingConstants.FONT_SIZE_DIVISOR),
+                    DrawingConstants.MIN_FONT_SIZE
+                )
+                desenharNumeroEstacao(
+                    numero = estacao.numero,
+                    center = centerLocal,
+                    textColor = Color.White,
+                    textMeasurer = textMeasurer,
+                    fontSizeSp = fontSizeSp
                 )
             }
         }

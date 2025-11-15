@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.smartcoworking.data.models.StatusEstacao
 
 /**
  * Objeto que define as cores do sistema de mapa de estações
@@ -25,6 +26,21 @@ object MapColors {
     val Borda = Color(0xFF757575)            // Cinza médio
     val Texto = Color(0xFF212121)            // Quase preto
     val TextoClaro = Color(0xFFFFFFFF)       // Branco
+
+    /**
+     * Mapeia o status de uma estação para sua cor correspondente.
+     *
+     * Esta função centraliza a lógica de mapeamento status→cor,
+     * eliminando duplicação de código em todos os componentes.
+     *
+     * @param status Status da estação (LIVRE/OCUPADO/RESERVADO)
+     * @return Cor correspondente ao status
+     */
+    fun getStatusColor(status: StatusEstacao): Color = when (status) {
+        StatusEstacao.LIVRE -> StatusLivre
+        StatusEstacao.OCUPADO -> StatusOcupado
+        StatusEstacao.RESERVADO -> StatusReservado
+    }
 }
 
 /**

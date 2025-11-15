@@ -18,27 +18,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.smartcoworking.data.models.StatusEstacao
 import com.example.smartcoworking.ui.theme.MapColors
 import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
-
-// ============================================================================
-// ENUMS E TIPOS
-// ============================================================================
-
-/**
- * Representa o status atual de uma estação de trabalho no mapa do coworking.
- * Cada status possui cor e padrão visual específicos (definidos em MapColors).
- */
-enum class StatusEstacao {
-    /** Estação disponível para reserva - Verde sólido */
-    LIVRE,
-
-    /** Estação atualmente em uso - Vermelho com hachuras diagonais */
-    OCUPADO,
-
-    /** Estação reservada para uso futuro - Amarelo com pontos */
-    RESERVADO
-}
+import com.example.smartcoworking.ui.screens.mapa.components.desenharNumeroEstacao
 
 // ============================================================================
 // COMPONENTES DE ESTAÇÕES RESERVÁVEIS
@@ -65,7 +48,6 @@ enum class StatusEstacao {
  * @param size Tamanho do lado do quadrado em dp (padrão: 50dp)
  * @param cornerRadius Raio dos cantos arredondados (padrão: 8dp)
  * @param borderWidth Espessura da borda (padrão: 1dp)
- * @param rotationDegrees Rotação em graus (para uso futuro, padrão: 0)
  */
 @Composable
 fun DesenharEstacaoQuadrada(
@@ -74,31 +56,17 @@ fun DesenharEstacaoQuadrada(
     numero: Int,
     size: Float = 50f,
     cornerRadius: Dp = 8.dp,
-    borderWidth: Dp = 1.dp,
-    rotationDegrees: Float = 0f
+    borderWidth: Dp = 1.dp
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val color = when (status) {
-        StatusEstacao.LIVRE -> MapColors.StatusLivre
-        StatusEstacao.OCUPADO -> MapColors.StatusOcupado
-        StatusEstacao.RESERVADO -> MapColors.StatusReservado
-    }
+    val color = MapColors.getStatusColor(status)
 
     Canvas(modifier = modifier.size(size.dp)) {
         val cornerRadiusPx = cornerRadius.toPx()
         val borderWidthPx = borderWidth.toPx()
 
         // PASSO 1: Criar gradiente para sombreamento interno
-        val shadowColor = color.copy(
-            red = color.red * 0.9f,
-            green = color.green * 0.9f,
-            blue = color.blue * 0.9f
-        )
-        val gradientBrush = Brush.verticalGradient(
-            colors = listOf(shadowColor, color),
-            startY = 0f,
-            endY = this.size.height
-        )
+        val gradientBrush = createDepthGradient(color)
 
         // PASSO 2: Desenhar fundo com gradiente
         drawRoundRect(
@@ -109,45 +77,23 @@ fun DesenharEstacaoQuadrada(
         )
 
         // PASSO 3: Desenhar borda para profundidade
-        drawRoundRect(
-            color = Color.Black.copy(alpha = 0.2f),
-            topLeft = Offset(borderWidthPx / 2, borderWidthPx / 2),
-            size = Size(this.size.width - borderWidthPx, this.size.height - borderWidthPx),
-            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidthPx / 2)),
-            style = Stroke(width = borderWidthPx)
+        drawBorderRoundRect(
+            size = this.size,
+            borderWidth = borderWidthPx,
+            cornerRadius = cornerRadiusPx
         )
 
         // PASSO 4: Aplicar padrão visual (acessibilidade)
-        val shapePath = Path().apply {
-            addRoundRect(
-                androidx.compose.ui.geometry.RoundRect(
-                    left = 0f,
-                    top = 0f,
-                    right = this@Canvas.size.width,
-                    bottom = this@Canvas.size.height,
-                    cornerRadius = CornerRadius(cornerRadiusPx)
-                )
-            )
-        }
-
-        when (status) {
-            StatusEstacao.OCUPADO -> desenharPadraoHachurado(shapePath, Color.Black)
-            StatusEstacao.RESERVADO -> desenharPadraoPontilhado(shapePath, Color.Black)
-            StatusEstacao.LIVRE -> { /* Sem padrão */ }
-        }
+        val shapePath = createRoundRectPath(cornerRadius = cornerRadiusPx)
+        aplicarPadraoStatus(shapePath, status)
 
         // PASSO 5: Desenhar número da estação
-        val fontSize = (size / 5.5).sp
-        val textLayoutResult = textMeasurer.measure(
-            text = numero.toString(),
-            style = TextStyle(fontSize = fontSize, color = Color.White)
-        )
-        drawText(
-            textLayoutResult = textLayoutResult,
-            topLeft = Offset(
-                x = center.x - textLayoutResult.size.width / 2,
-                y = center.y - textLayoutResult.size.height / 2
-            )
+        desenharNumeroEstacao(
+            numero = numero,
+            center = center,
+            textColor = Color.White,
+            textMeasurer = textMeasurer,
+            fontSizeSp = (size / DrawingConstants.FONT_SIZE_DIVISOR)
         )
     }
 }
@@ -168,7 +114,6 @@ fun DesenharEstacaoQuadrada(
  * @param numero Número de identificação da estação
  * @param size Diâmetro do círculo em dp (padrão: 80dp)
  * @param borderWidth Espessura da borda (padrão: 1dp)
- * @param rotationDegrees Rotação em graus (para uso futuro, padrão: 0)
  */
 @Composable
 fun DesenharEstacaoCircular(
@@ -176,31 +121,17 @@ fun DesenharEstacaoCircular(
     status: StatusEstacao,
     numero: Int,
     size: Float = 80f,
-    borderWidth: Dp = 1.dp,
-    rotationDegrees: Float = 0f
+    borderWidth: Dp = 1.dp
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val color = when (status) {
-        StatusEstacao.LIVRE -> MapColors.StatusLivre
-        StatusEstacao.OCUPADO -> MapColors.StatusOcupado
-        StatusEstacao.RESERVADO -> MapColors.StatusReservado
-    }
+    val color = MapColors.getStatusColor(status)
 
     Canvas(modifier = modifier.size(size.dp)) {
         val borderWidthPx = borderWidth.toPx()
         val radius = this.size.width / 2
 
         // PASSO 1: Criar gradiente
-        val shadowColor = color.copy(
-            red = color.red * 0.9f,
-            green = color.green * 0.9f,
-            blue = color.blue * 0.9f
-        )
-        val gradientBrush = Brush.verticalGradient(
-            colors = listOf(shadowColor, color),
-            startY = 0f,
-            endY = this.size.height
-        )
+        val gradientBrush = createDepthGradient(color)
 
         // PASSO 2: Desenhar círculo com gradiente
         drawCircle(
@@ -210,11 +141,10 @@ fun DesenharEstacaoCircular(
         )
 
         // PASSO 3: Desenhar borda
-        drawCircle(
-            color = Color.Black.copy(alpha = 0.2f),
-            radius = radius - (borderWidthPx / 2),
+        drawBorderCircle(
+            radius = radius,
             center = center,
-            style = Stroke(width = borderWidthPx)
+            borderWidth = borderWidthPx
         )
 
         // PASSO 4: Aplicar padrão visual
@@ -228,25 +158,15 @@ fun DesenharEstacaoCircular(
                 )
             )
         }
-
-        when (status) {
-            StatusEstacao.OCUPADO -> desenharPadraoHachurado(shapePath, Color.Black)
-            StatusEstacao.RESERVADO -> desenharPadraoPontilhado(shapePath, Color.Black)
-            StatusEstacao.LIVRE -> { /* Sem padrão */ }
-        }
+        aplicarPadraoStatus(shapePath, status)
 
         // PASSO 5: Desenhar número
-        val fontSize = (size / 5.5).sp
-        val textLayoutResult = textMeasurer.measure(
-            text = numero.toString(),
-            style = TextStyle(fontSize = fontSize, color = Color.White)
-        )
-        drawText(
-            textLayoutResult = textLayoutResult,
-            topLeft = Offset(
-                x = center.x - textLayoutResult.size.width / 2,
-                y = center.y - textLayoutResult.size.height / 2
-            )
+        desenharNumeroEstacao(
+            numero = numero,
+            center = center,
+            textColor = Color.White,
+            textMeasurer = textMeasurer,
+            fontSizeSp = (size / DrawingConstants.FONT_SIZE_DIVISOR)
         )
     }
 }
@@ -269,7 +189,6 @@ fun DesenharEstacaoCircular(
  * @param height Altura do retângulo em dp (padrão: 70dp)
  * @param cornerRadius Raio dos cantos arredondados (padrão: 8dp)
  * @param borderWidth Espessura da borda (padrão: 1dp)
- * @param rotationDegrees Rotação em graus (para uso futuro, padrão: 0)
  */
 @Composable
 fun DesenharEstacaoRetangular(
@@ -279,31 +198,17 @@ fun DesenharEstacaoRetangular(
     width: Float = 120f,
     height: Float = 70f,
     cornerRadius: Dp = 8.dp,
-    borderWidth: Dp = 1.dp,
-    rotationDegrees: Float = 0f
+    borderWidth: Dp = 1.dp
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val color = when (status) {
-        StatusEstacao.LIVRE -> MapColors.StatusLivre
-        StatusEstacao.OCUPADO -> MapColors.StatusOcupado
-        StatusEstacao.RESERVADO -> MapColors.StatusReservado
-    }
+    val color = MapColors.getStatusColor(status)
 
     Canvas(modifier = modifier.size(width.dp, height.dp)) {
         val cornerRadiusPx = cornerRadius.toPx()
         val borderWidthPx = borderWidth.toPx()
 
         // PASSO 1: Criar gradiente
-        val shadowColor = color.copy(
-            red = color.red * 0.9f,
-            green = color.green * 0.9f,
-            blue = color.blue * 0.9f
-        )
-        val gradientBrush = Brush.verticalGradient(
-            colors = listOf(shadowColor, color),
-            startY = 0f,
-            endY = this.size.height
-        )
+        val gradientBrush = createDepthGradient(color)
 
         // PASSO 2: Desenhar fundo
         drawRoundRect(
@@ -314,45 +219,23 @@ fun DesenharEstacaoRetangular(
         )
 
         // PASSO 3: Desenhar borda
-        drawRoundRect(
-            color = Color.Black.copy(alpha = 0.2f),
-            topLeft = Offset(borderWidthPx / 2, borderWidthPx / 2),
-            size = Size(this.size.width - borderWidthPx, this.size.height - borderWidthPx),
-            cornerRadius = CornerRadius(cornerRadiusPx - (borderWidthPx / 2)),
-            style = Stroke(width = borderWidthPx)
+        drawBorderRoundRect(
+            size = this.size,
+            borderWidth = borderWidthPx,
+            cornerRadius = cornerRadiusPx
         )
 
         // PASSO 4: Aplicar padrão visual
-        val shapePath = Path().apply {
-            addRoundRect(
-                androidx.compose.ui.geometry.RoundRect(
-                    left = 0f,
-                    top = 0f,
-                    right = this@Canvas.size.width,
-                    bottom = this@Canvas.size.height,
-                    cornerRadius = CornerRadius(cornerRadiusPx)
-                )
-            )
-        }
-
-        when (status) {
-            StatusEstacao.OCUPADO -> desenharPadraoHachurado(shapePath, Color.Black)
-            StatusEstacao.RESERVADO -> desenharPadraoPontilhado(shapePath, Color.Black)
-            StatusEstacao.LIVRE -> { /* Sem padrão */ }
-        }
+        val shapePath = createRoundRectPath(cornerRadius = cornerRadiusPx)
+        aplicarPadraoStatus(shapePath, status)
 
         // PASSO 5: Desenhar número
-        val fontSize = (this.size.height / 5.0).sp
-        val textLayoutResult = textMeasurer.measure(
-            text = numero.toString(),
-            style = TextStyle(fontSize = fontSize, color = Color.White)
-        )
-        drawText(
-            textLayoutResult = textLayoutResult,
-            topLeft = Offset(
-                x = center.x - textLayoutResult.size.width / 2,
-                y = center.y - textLayoutResult.size.height / 2
-            )
+        desenharNumeroEstacao(
+            numero = numero,
+            center = center,
+            textColor = Color.White,
+            textMeasurer = textMeasurer,
+            fontSizeSp = (this.size.height / DrawingConstants.FONT_SIZE_DIVISOR)
         )
     }
 }
@@ -531,8 +414,7 @@ fun EstacoesRetangularesPreview() {
                 status = StatusEstacao.LIVRE,
                 numero = 12,
                 width = 70f,
-                height = 120f,
-                rotationDegrees = 90f
+                height = 120f
             )
         }
     }
