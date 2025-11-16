@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartcoworking.data.CanvasConfig
 import com.example.smartcoworking.data.models.EstacaoDeTrabalho
+import com.example.smartcoworking.data.models.StatusEstacao
 import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
 
 /**
@@ -38,100 +39,118 @@ fun MapaCoworkingScreen(
     val areasEspeciais by viewModel.areasEspeciais.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Calcular número de estações disponíveis (status LIVRE)
+    val estacoesDisponiveis = remember(estacoes) {
+        estacoes.count { it.status == StatusEstacao.LIVRE }
+    }
+
     // Estado local para controlar exibição da legenda (Fase 6)
     var mostrarLegenda by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Mapa de Estações")
-                        Text(
-                            text = "${estacoes.size} estações disponíveis",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { mostrarLegenda = true },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Mostrar Legenda"
-                )
-            }
-        }
-    ) { paddingValues ->
-        Box(
+    Scaffold { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when {
-                // Estado de carregamento
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+            // Header customizado integrado
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Título e contador
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "Mapa de Estações",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "$estacoesDisponiveis estações disponíveis",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                // Nenhuma estação disponível (edge case)
-                estacoes.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Nenhuma estação disponível",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.recarregar() }) {
-                            Text("Recarregar")
-                        }
-                    }
-                }
-
-                // Renderizar mapa com scroll horizontal
-                else -> {
-                    BoxWithConstraints {
-                        val hScroll = rememberScrollState()
-                        val aspect = CanvasConfig.LARGURA / CanvasConfig.ALTURA
-                        val mapHeight = this.maxHeight
-                        val mapWidth = mapHeight * aspect
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .horizontalScroll(hScroll)
-                        ) {
-                            MapaCoworkingCanvas(
-                                estacoes = estacoes,
-                                areasEspeciais = areasEspeciais,
-                                modifier = Modifier.size(mapWidth, mapHeight),
-                                onEstacaoClick = onEstacaoClick
-                            )
-                        }
-                    }
+                // Ícone de informação no canto superior direito
+                IconButton(
+                    onClick = { mostrarLegenda = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Mostrar Legenda",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
-            // TODO Fase 6: Implementar LegendaDialog
-            // if (mostrarLegenda) {
-            //     LegendaDialog(onDismiss = { mostrarLegenda = false })
-            // }
+            // Conteúdo principal
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                when {
+                    // Estado de carregamento
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+
+                    // Nenhuma estação disponível (edge case)
+                    estacoes.isEmpty() -> {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Nenhuma estação disponível",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.recarregar() }) {
+                                Text("Recarregar")
+                            }
+                        }
+                    }
+
+                    // Renderizar mapa com scroll horizontal
+                    else -> {
+                        BoxWithConstraints {
+                            val hScroll = rememberScrollState()
+                            val aspect = CanvasConfig.LARGURA / CanvasConfig.ALTURA
+                            val mapHeight = this.maxHeight
+                            val mapWidth = mapHeight * aspect
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .horizontalScroll(hScroll)
+                            ) {
+                                MapaCoworkingCanvas(
+                                    estacoes = estacoes,
+                                    areasEspeciais = areasEspeciais,
+                                    modifier = Modifier.size(mapWidth, mapHeight),
+                                    onEstacaoClick = onEstacaoClick
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // TODO Fase 6: Implementar LegendaDialog
+                // if (mostrarLegenda) {
+                //     LegendaDialog(onDismiss = { mostrarLegenda = false })
+                // }
+            }
         }
     }
 }
