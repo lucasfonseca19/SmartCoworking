@@ -2,6 +2,7 @@ package com.example.smartcoworking.ui.screens.mapa
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -52,18 +53,24 @@ fun MapaCoworkingCanvas(
         mutableMapOf<Pair<Int, Float>, androidx.compose.ui.text.TextLayoutResult>()
     }
 
+    val backgroundColor = MaterialTheme.colorScheme.background
+
     Canvas(modifier = modifier) {
         // Escala uniforme baseada na altura do container (preserva proporções 1500x900)
         val escala = size.height / CanvasConfig.ALTURA
         // Escala de conteúdo para criar um preenchimento (padding) em torno do mapa
-        val conteudoEscala = 0.95f // Aumentado de 0.85 para 0.95 para reduzir o padding excessivo
+        val conteudoEscala = 0.80f // Reduzido para 0.80 para evitar sobreposição com a UI flutuante
         val centerBase = Offset(CanvasConfig.LARGURA / 2f, CanvasConfig.ALTURA / 2f)
+        
+        // Deslocamento vertical para baixar o mapa (evitar sobreposição com UI flutuante)
+        // 10% da altura total parece um bom valor para equilibrar com o espaço vazio embaixo
+        val verticalOffset = CanvasConfig.ALTURA * 0.05f 
 
         // Função para escalar o conteúdo em direção ao centro, criando padding simétrico
         fun scaleAroundCenter(base: Offset): Offset {
             return Offset(
                 x = centerBase.x + (base.x - centerBase.x) * conteudoEscala,
-                y = centerBase.y + (base.y - centerBase.y) * conteudoEscala
+                y = centerBase.y + (base.y - centerBase.y) * conteudoEscala + verticalOffset
             )
         }
 
@@ -71,7 +78,7 @@ fun MapaCoworkingCanvas(
         // PASSO 1: Desenhar fundo do canvas
         // ====================================================================
         drawRect(
-            color = Color(0xFFFAFAFA), // Cinza muito claro
+            color = backgroundColor,
             size = size
         )
 

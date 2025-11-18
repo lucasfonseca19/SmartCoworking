@@ -17,9 +17,10 @@ import com.example.smartcoworking.data.models.StatusEstacao
  */
 object MapColors {
     // Status das Estações
-    val StatusLivre = Color(0xFF4CAF50)      // Verde sólido
-    val StatusOcupado = Color(0xFFF44336)    // Vermelho
-    val StatusReservado = Color(0xFFFFC107)  // Amarelo
+    // Status das Estações
+    val StatusLivre = StatusGreen      // Verde harmonizado
+    val StatusOcupado = StatusRed    // Vermelho harmonizado
+    val StatusReservado = StatusYellow  // Amarelo harmonizado
 
     // Elementos Decorativos
     val AreaComum = Color(0xFFE0E0E0)        // Cinza claro

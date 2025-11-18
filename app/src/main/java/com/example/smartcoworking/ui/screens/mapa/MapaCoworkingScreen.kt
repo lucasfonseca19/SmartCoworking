@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
 fun MapaCoworkingScreen(
     viewModel: MapaViewModel = viewModel(),
     onEstacaoClick: (EstacaoDeTrabalho) -> Unit = {},
@@ -48,109 +50,108 @@ fun MapaCoworkingScreen(
     var mostrarLegenda by remember { mutableStateOf(false) }
 
     Scaffold { paddingValues ->
-        Column(
+        // Usar Box para permitir sobreposição (Floating UI)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Header customizado integrado
+            // CAMADA 1: MAPA (Fundo total)
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (estacoes.isEmpty()) {
+                // Empty State
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Nenhuma estação disponível")
+                    Button(onClick = { viewModel.recarregar() }) { Text("Recarregar") }
+                }
+            } else {
+                // Mapa com Scroll
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val hScroll = rememberScrollState()
+                    val aspect = CanvasConfig.LARGURA / CanvasConfig.ALTURA
+                    val mapHeight = this.maxHeight
+                    val mapWidth = mapHeight * aspect
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .horizontalScroll(hScroll)
+                    ) {
+                        MapaCoworkingCanvas(
+                            estacoes = estacoes,
+                            areasEspeciais = areasEspeciais,
+                            modifier = Modifier.size(mapWidth, mapHeight),
+                            onEstacaoClick = onEstacaoClick
+                        )
+                    }
+                }
+            }
+
+            // CAMADA 2: UI FLUTUANTE (Sobreposta ao mapa)
+            
+            // Container para alinhar Pílula e Botão de Usuário
             Row(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(top = 48.dp, start = 24.dp, end = 24.dp), // Aumentado top padding
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Título e contador
-                Column(
-                    modifier = Modifier.weight(1f)
+                // 2.1 Header Flutuante (Pílula de Status)
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp,
+                    tonalElevation = 2.dp
                 ) {
-                    Text(
-                        text = "Mapa de Estações",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "$estacoesDisponiveis estações disponíveis",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Ícone de informação no canto superior direito
-                IconButton(
-                    onClick = { mostrarLegenda = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Mostrar Legenda",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            // Conteúdo principal
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                when {
-                    // Estado de carregamento
-                    isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "$estacoesDisponiveis Livres",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
-
-                    // Nenhuma estação disponível (edge case)
-                    estacoes.isEmpty() -> {
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Nenhuma estação disponível",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.recarregar() }) {
-                                Text("Recarregar")
-                            }
-                        }
-                    }
-
-                    // Renderizar mapa com scroll horizontal
-                    else -> {
-                        BoxWithConstraints {
-                            val hScroll = rememberScrollState()
-                            val aspect = CanvasConfig.LARGURA / CanvasConfig.ALTURA
-                            val mapHeight = this.maxHeight
-                            val mapWidth = mapHeight * aspect
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .horizontalScroll(hScroll)
-                            ) {
-                                MapaCoworkingCanvas(
-                                    estacoes = estacoes,
-                                    areasEspeciais = areasEspeciais,
-                                    modifier = Modifier.size(mapWidth, mapHeight),
-                                    onEstacaoClick = onEstacaoClick
-                                )
-                            }
-                        }
-                    }
                 }
 
-                // TODO Fase 6: Implementar LegendaDialog
-                // if (mostrarLegenda) {
-                //     LegendaDialog(onDismiss = { mostrarLegenda = false })
-                // }
+                // 2.2 Botão de Usuário (Alinhado visualmente com a pílula)
+                Surface(
+                    onClick = { /* TODO: Perfil do usuário */ },
+                    shape = MaterialTheme.shapes.extraLarge, // Mesmo shape da pílula (ou CircleShape)
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.height(48.dp) // Altura fixa para garantir alinhamento se necessário, ou deixar wrap
+                ) {
+                    Box(
+                        modifier = Modifier.padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Perfil do Usuário",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
+
+            // TODO Fase 6: Implementar LegendaDialog
+            // if (mostrarLegenda) {
+            //     LegendaDialog(onDismiss = { mostrarLegenda = false })
+            // }
         }
     }
 }
