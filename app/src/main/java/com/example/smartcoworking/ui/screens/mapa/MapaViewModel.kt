@@ -67,7 +67,22 @@ class MapaViewModel : ViewModel() {
 
 
 
-    // TODO Fase 5: Implementar simulação em tempo real
-    // fun iniciarSimulacaoTempoReal() { ... }
-    // fun pararSimulacaoTempoReal() { ... }
+    /**
+     * Reserva uma estação de trabalho
+     */
+    fun reservarEstacao(estacao: EstacaoDeTrabalho) {
+        val novaLista = _estacoes.value.map {
+            if (it.id == estacao.id) {
+                it.copy(status = com.example.smartcoworking.data.models.StatusEstacao.RESERVADO)
+            } else {
+                it
+            }
+        }
+        _estacoes.value = novaLista
+        
+        // Atualiza também a estação selecionada para refletir a mudança na UI
+        if (_estacaoSelecionada.value?.id == estacao.id) {
+            _estacaoSelecionada.value = _estacaoSelecionada.value?.copy(status = com.example.smartcoworking.data.models.StatusEstacao.RESERVADO)
+        }
+    }
 }

@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +54,12 @@ import com.example.smartcoworking.ui.theme.StatusGreen
 import com.example.smartcoworking.ui.theme.StatusRed
 import com.example.smartcoworking.ui.theme.StatusYellow
 
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.smartcoworking.R
+import com.example.smartcoworking.ui.components.SlideToReserveButton
+
 @Composable
 fun ReservationCard(
     station: EstacaoDeTrabalho,
@@ -60,165 +67,182 @@ fun ReservationCard(
     onReserve: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier
-            .width(360.dp) // Increased width
-            .padding(16.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = CreamBackground)
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.confetti))
+    
+    Box(modifier = modifier) {
+        Card(
+            modifier = Modifier
+                .width(360.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+            colors = CardDefaults.cardColors(containerColor = CreamBackground)
         ) {
-            // Header: Title and Close Button
-            // Using Box with constrained width for title to avoid overlap
-            Box(modifier = Modifier.fillMaxWidth()) {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.TopStart).size(24.dp)
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header: Title and Close Button
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.TopStart).size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar",
+                            tint = CoffeeDark
+                        )
+                    }
+                    
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = station.nome,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = CoffeeDark,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        StatusPill(status = station.status)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Capacity Indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Fechar",
-                        tint = CoffeeDark
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Capacidade",
+                        tint = CoffeeDark.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp)
                     )
-                }
-                
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 32.dp), // Padding to prevent overlap with X
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = station.nome,
-                        style = MaterialTheme.typography.headlineSmall, // Slightly smaller for long names
-                        color = CoffeeDark,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        text = if (station.capacidade == 1) "1 Pessoa" else "${station.capacidade} Pessoas",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CoffeeDark.copy(alpha = 0.6f)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    StatusPill(status = station.status)
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Capacity Indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Capacidade",
-                    tint = CoffeeDark.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (station.capacidade == 1) "1 Pessoa" else "${station.capacidade} Pessoas",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = CoffeeDark.copy(alpha = 0.6f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // IoT Sensors Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                SensorItem(
-                    icon = Icons.Default.AcUnit,
-                    value = "${station.leituraSensor.temperatura.toInt()}°C",
-                    label = "Temp"
-                )
-                SensorItem(
-                    icon = Icons.AutoMirrored.Filled.VolumeUp,
-                    value = station.leituraSensor.nivelRuido.name.lowercase().capitalize(),
-                    label = "Ruído"
-                )
-                SensorItem(
-                    icon = Icons.Default.Air,
-                    value = station.leituraSensor.qualidadeAr.name.lowercase().capitalize(),
-                    label = "Ar"
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Amenities Section
-            if (station.comodidades.isNotEmpty()) {
-                Column(
+                // IoT Sensors Row
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(
-                        text = "Comodidades",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = CoffeeDark.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                    SensorItem(
+                        icon = Icons.Default.AcUnit,
+                        value = "${station.leituraSensor.temperatura.toInt()}°C",
+                        label = "Temp"
                     )
-                    
-                    // Simple FlowRow implementation using nested Rows for compatibility
-                    // (Or just a simple Row with wrap if few items, or vertical list)
-                    // Since we don't have FlowRow in older Compose versions without Accompanist,
-                    // let's use a simple vertical list of rows or just one row with scroll if needed.
-                    // For now, let's assume few items and use a wrapped layout logic or just display first few.
-                    // Actually, let's just use a Column of Rows for simplicity without external libs.
-                    
-                    Row(
+                    SensorItem(
+                        icon = Icons.AutoMirrored.Filled.VolumeUp,
+                        value = station.leituraSensor.nivelRuido.name.lowercase().capitalize(),
+                        label = "Ruído"
+                    )
+                    SensorItem(
+                        icon = Icons.Default.Air,
+                        value = station.leituraSensor.qualidadeAr.name.lowercase().capitalize(),
+                        label = "Ar"
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Amenities Section
+                if (station.comodidades.isNotEmpty()) {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalAlignment = Alignment.Start
                     ) {
-                         station.comodidades.take(3).forEach { item ->
-                            AmenityChip(text = item)
-                        }
-                    }
-                    if (station.comodidades.size > 3) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Comodidades",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = CoffeeDark.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                             station.comodidades.drop(3).forEach { item ->
+                             station.comodidades.take(3).forEach { item ->
                                 AmenityChip(text = item)
                             }
                         }
+                        if (station.comodidades.size > 3) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                 station.comodidades.drop(3).forEach { item ->
+                                    AmenityChip(text = item)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Slide to Reserve Button
+                val isReservable = station.status == StatusEstacao.LIVRE
+                val isReserved = station.status == StatusEstacao.RESERVADO
+                
+                if (isReservable || isReserved) {
+                    SlideToReserveButton(
+                        isReserved = isReserved,
+                        onReserve = onReserve,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Se ocupado, botão desabilitado padrão
+                    Button(
+                        onClick = {},
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContainerColor = CoffeeDark.copy(alpha = 0.5f),
+                            disabledContentColor = CreamBackground.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Text(
+                            text = "Ocupado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-            } else {
-                Spacer(modifier = Modifier.height(8.dp))
             }
-
-            // Reserve Button
-            val isReservable = station.status == StatusEstacao.LIVRE
-            Button(
-                onClick = onReserve,
-                enabled = isReservable,
+        }
+        
+        // Confetti Animation Overlay
+        if (station.status == StatusEstacao.RESERVADO) {
+            LottieAnimation(
+                composition = composition,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = CoffeeDark,
-                    contentColor = CreamBackground,
-                    disabledContainerColor = CoffeeDark.copy(alpha = 0.5f),
-                    disabledContentColor = CreamBackground.copy(alpha = 0.7f)
-                )
-            ) {
-                Text(
-                    text = if (isReservable) "Reservar Agora" else "Indisponível",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                    .align(Alignment.Center)
+                    .size(400.dp),
+                iterations = 1,
+                speed = 0.6f // Animação mais lenta (60% da velocidade original)
+            )
         }
     }
 }

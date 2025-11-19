@@ -30,7 +30,23 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("map") {
-                        MapaCoworkingScreen()
+                        MapaCoworkingScreen(
+                            onProfileClick = {
+                                navController.navigate("profile")
+                            }
+                        )
+                    }
+                    composable("profile") {
+                        com.example.smartcoworking.ui.screens.profile.ProfileScreen(
+                            onLogout = {
+                                navController.navigate("login") {
+                                    popUpTo("map") { inclusive = true }
+                                }
+                            },
+                            onVoltar = {
+                                navController.popBackStack()
+                            }
+                        )
                     }
                 }
             }

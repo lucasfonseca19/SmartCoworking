@@ -40,7 +40,8 @@ import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
 fun MapaCoworkingScreen(
     viewModel: MapaViewModel = viewModel(),
     onEstacaoClick: (EstacaoDeTrabalho) -> Unit = {},
-    onVoltar: (() -> Unit)? = null
+    onVoltar: (() -> Unit)? = null,
+    onProfileClick: () -> Unit = {}
 ) {
     // Coletar estados do ViewModel
     val estacoes by viewModel.estacoes.collectAsState()
@@ -143,7 +144,7 @@ fun MapaCoworkingScreen(
 
                     // 2.2 Botão de Usuário (Alinhado visualmente com a pílula)
                     Surface(
-                        onClick = { /* TODO: Perfil do usuário */ },
+                        onClick = onProfileClick,
                         shape = MaterialTheme.shapes.extraLarge,
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 4.dp,
@@ -176,8 +177,7 @@ fun MapaCoworkingScreen(
                         station = estacao,
                         onDismiss = { viewModel.selecionarEstacao(null) },
                         onReserve = {
-                            // TODO: Implementar lógica de reserva
-                            viewModel.selecionarEstacao(null)
+                            viewModel.reservarEstacao(estacao)
                         }
                     )
                 }
