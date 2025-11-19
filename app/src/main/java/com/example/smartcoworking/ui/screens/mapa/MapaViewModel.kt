@@ -29,6 +29,10 @@ class MapaViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // Estado da estação selecionada
+    private val _estacaoSelecionada = MutableStateFlow<EstacaoDeTrabalho?>(null)
+    val estacaoSelecionada: StateFlow<EstacaoDeTrabalho?> = _estacaoSelecionada.asStateFlow()
+
     init {
         carregarDados()
     }
@@ -53,6 +57,15 @@ class MapaViewModel : ViewModel() {
     fun recarregar() {
         carregarDados()
     }
+
+    /**
+     * Seleciona uma estação específica
+     */
+    fun selecionarEstacao(estacao: EstacaoDeTrabalho?) {
+        _estacaoSelecionada.value = estacao
+    }
+
+
 
     // TODO Fase 5: Implementar simulação em tempo real
     // fun iniciarSimulacaoTempoReal() { ... }

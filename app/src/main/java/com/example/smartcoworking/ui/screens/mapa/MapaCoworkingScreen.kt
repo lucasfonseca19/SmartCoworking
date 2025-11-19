@@ -1,10 +1,15 @@
 package com.example.smartcoworking.ui.screens.mapa
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartcoworking.data.CanvasConfig
 import com.example.smartcoworking.data.models.EstacaoDeTrabalho
 import com.example.smartcoworking.data.models.StatusEstacao
+import com.example.smartcoworking.ui.screens.mapa.components.ReservationCard
 import com.example.smartcoworking.ui.theme.SmartCoworkingTheme
 
 /**
@@ -40,14 +46,14 @@ fun MapaCoworkingScreen(
     val estacoes by viewModel.estacoes.collectAsState()
     val areasEspeciais by viewModel.areasEspeciais.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val estacaoSelecionada by viewModel.estacaoSelecionada.collectAsState()
 
     // Calcular número de estações disponíveis (status LIVRE)
     val estacoesDisponiveis = remember(estacoes) {
         estacoes.count { it.status == StatusEstacao.LIVRE }
     }
 
-    // Estado local para controlar exibição da legenda (Fase 6)
-    var mostrarLegenda by remember { mutableStateOf(false) }
+
 
     Scaffold { paddingValues ->
         // Usar Box para permitir sobreposição (Floating UI)
@@ -89,7 +95,10 @@ fun MapaCoworkingScreen(
                             estacoes = estacoes,
                             areasEspeciais = areasEspeciais,
                             modifier = Modifier.size(mapWidth, mapHeight),
-                            onEstacaoClick = onEstacaoClick
+                            onEstacaoClick = { estacao ->
+                                viewModel.selecionarEstacao(estacao)
+                                onEstacaoClick(estacao)
+                            }
                         )
                     }
                 }
@@ -98,53 +107,79 @@ fun MapaCoworkingScreen(
             // CAMADA 2: UI FLUTUANTE (Sobreposta ao mapa)
             
             // Container para alinhar Pílula e Botão de Usuário
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .padding(top = 48.dp, start = 24.dp, end = 24.dp), // Aumentado top padding
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // (Ocultar quando o card estiver visível para limpar a tela)
+            AnimatedVisibility(
+                visible = estacaoSelecionada == null,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                // 2.1 Header Flutuante (Pílula de Status)
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 4.dp,
-                    tonalElevation = 2.dp
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .padding(top = 48.dp, start = 24.dp, end = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    // 2.1 Header Flutuante (Pílula de Status)
+                    Surface(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        tonalElevation = 2.dp
                     ) {
-                        Text(
-                            text = "$estacoesDisponiveis Livres",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "$estacoesDisponiveis Livres",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // 2.2 Botão de Usuário (Alinhado visualmente com a pílula)
+                    Surface(
+                        onClick = { /* TODO: Perfil do usuário */ },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        tonalElevation = 2.dp,
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Perfil do Usuário",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
+            }
 
-                // 2.2 Botão de Usuário (Alinhado visualmente com a pílula)
-                Surface(
-                    onClick = { /* TODO: Perfil do usuário */ },
-                    shape = MaterialTheme.shapes.extraLarge, // Mesmo shape da pílula (ou CircleShape)
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 4.dp,
-                    tonalElevation = 2.dp,
-                    modifier = Modifier.height(48.dp) // Altura fixa para garantir alinhamento se necessário, ou deixar wrap
-                ) {
-                    Box(
-                        modifier = Modifier.padding(12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Perfil do Usuário",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+            // CAMADA 3: CARD DE RESERVA (Centralizado)
+            AnimatedVisibility(
+                visible = estacaoSelecionada != null,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut(),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                estacaoSelecionada?.let { estacao ->
+                    ReservationCard(
+                        station = estacao,
+                        onDismiss = { viewModel.selecionarEstacao(null) },
+                        onReserve = {
+                            // TODO: Implementar lógica de reserva
+                            viewModel.selecionarEstacao(null)
+                        }
+                    )
                 }
             }
 

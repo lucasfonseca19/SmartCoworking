@@ -14,8 +14,7 @@ enum class TipoEstacao {
     /** Sala de reunião para grupos */
     SALA_REUNIAO,
 
-    /** Cabine privativa para trabalho focado */
-    CABINE_PRIVADA
+
 }
 
 /**
@@ -149,7 +148,10 @@ data class EstacaoDeTrabalho(
     // Renderização no Canvas
     val posicao: PosicaoCanvas,
     val dimensoes: DimensoesCanvas,
-    val forma: FormaEstacao
+    val forma: FormaEstacao,
+
+    // Detalhes adicionais
+    val comodidades: List<String> = emptyList()
 )
 
 /**

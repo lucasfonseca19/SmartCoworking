@@ -111,7 +111,6 @@ object EstacoesMockData {
             estacoes.add(
                 criarSala(
                     numero = numeroSequencial++,
-                    x = PosicionamentoEstacoes.SalasReuniao.X,
                     y = y,
                     largura = largura,
                     altura = altura
@@ -165,6 +164,18 @@ object EstacoesMockData {
         y: Float
     ): EstacaoDeTrabalho {
         val posicao = PosicaoCanvas(x, y)
+        
+        // Determinar comodidades baseado na zona
+        val comodidades = when {
+            // Parede Esquerda - próximo à janela esquerda
+            x < 100f -> listOf("Luz Natural")
+            // Topo - próximo à parede superior (tem janelas)
+            y < 100f -> listOf("Monitor", "Luz Natural")
+            // Fundo - área isolada
+            y > 700f -> listOf("Monitor Duplo")
+            // Coluna Direita e outras - sem comodidades específicas
+            else -> emptyList()
+        }
 
         return EstacaoDeTrabalho(
             id = "EST-${numero.toString().padStart(3, '0')}",
@@ -173,13 +184,14 @@ object EstacoesMockData {
             tipo = TipoEstacao.MESA,
             capacidade = 1,
             status = StatusEstacao.LIVRE, // Será redistribuído depois
-            leituraSensor = gerarLeituraSensor(posicao),
+            leituraSensor = gerarLeituraSensor(posicao, numero),
             posicao = posicao,
             dimensoes = DimensoesCanvas(
                 TamanhosEstacao.INDIVIDUAL_SIZE,
                 TamanhosEstacao.INDIVIDUAL_SIZE
             ),
-            forma = FormaEstacao.QUADRADO
+            forma = FormaEstacao.QUADRADO,
+            comodidades = comodidades
         )
     }
 
@@ -200,13 +212,14 @@ object EstacoesMockData {
             tipo = TipoEstacao.MESA,
             capacidade = 4,
             status = StatusEstacao.LIVRE, // Será redistribuído depois
-            leituraSensor = gerarLeituraSensor(posicao),
+            leituraSensor = gerarLeituraSensor(posicao, numero),
             posicao = posicao,
             dimensoes = DimensoesCanvas(
                 TamanhosEstacao.COLABORATIVA_DIAMETER,
                 TamanhosEstacao.COLABORATIVA_DIAMETER
             ),
-            forma = FormaEstacao.CIRCULO
+            forma = FormaEstacao.CIRCULO,
+            comodidades = emptyList() // Mesas colaborativas sem comodidades específicas
         )
     }
 
@@ -215,24 +228,24 @@ object EstacoesMockData {
      */
     private fun criarSala(
         numero: Int,
-        x: Float,
         y: Float,
         largura: Float = TamanhosEstacao.SALA_SIZE.largura,
         altura: Float = TamanhosEstacao.SALA_SIZE.altura
     ): EstacaoDeTrabalho {
-        val posicao = PosicaoCanvas(x, y)
+        val posicao = PosicaoCanvas(PosicionamentoEstacoes.SalasReuniao.X, y)
 
         return EstacaoDeTrabalho(
             id = "SALA-${numero.toString().padStart(3, '0')}",
             numero = numero,
             nome = "Sala de Reunião ${numero}",
             tipo = TipoEstacao.SALA_REUNIAO,
-            capacidade = 6,
+            capacidade = 8,
             status = StatusEstacao.LIVRE, // Será redistribuído depois
-            leituraSensor = gerarLeituraSensor(posicao),
+            leituraSensor = gerarLeituraSensor(posicao, numero),
             posicao = posicao,
             dimensoes = DimensoesCanvas(largura, altura),
-            forma = FormaEstacao.RETANGULO
+            forma = FormaEstacao.RETANGULO,
+            comodidades = listOf("TV 4K", "Webcam", "Quadro Branco")
         )
     }
 
@@ -248,10 +261,10 @@ object EstacoesMockData {
      * - Ruído: maior perto da área de descanso, menor nas extremidades
      * - Qualidade do ar: variação leve aleatória
      */
-    private fun gerarLeituraSensor(posicao: PosicaoCanvas): LeituraSensor {
+    private fun gerarLeituraSensor(posicao: PosicaoCanvas, numero: Int): LeituraSensor {
         return LeituraSensor(
             temperatura = calcularTemperatura(posicao),
-            nivelRuido = calcularNivelRuido(posicao),
+            nivelRuido = calcularNivelRuido(posicao, numero),
             qualidadeAr = calcularQualidadeAr(),
             timestamp = "2025-11-14T10:00:00Z" // Mock fixo
         )
@@ -290,11 +303,20 @@ object EstacoesMockData {
      * Calcula nível de ruído baseado na distância da área de descanso
      *
      * Lógica:
+     * - Estações específicas próximas à área de descanso (13, 7, 9, 18-22): MODERADO ou ALTO
      * - Perto da área de descanso: MODERADO ou ALTO
      * - Longe da área de descanso: SILENCIOSO ou MODERADO
      * - Extremidades da sala: SILENCIOSO
      */
-    private fun calcularNivelRuido(posicao: PosicaoCanvas): NivelRuido {
+    private fun calcularNivelRuido(posicao: PosicaoCanvas, numero: Int): NivelRuido {
+        // Estações específicas próximas à área de descanso
+        val estacoesRuidosas = setOf(7, 9, 13, 18, 19, 20, 21, 22)
+        
+        if (numero in estacoesRuidosas) {
+            // Forçar ruído MODERADO ou ALTO para essas estações
+            return if (Random.nextFloat() < 0.5f) NivelRuido.MODERADO else NivelRuido.ALTO
+        }
+        
         val distanciaAreaDescanso = calcularDistancia(
             posicao,
             ReferenciasEspaciais.CENTRO_AREA_DESCANSO
@@ -362,7 +384,7 @@ object EstacoesMockData {
 
         val numLivres = (totalEstacoes * DistribuicaoStatus.PERCENTUAL_LIVRE).toInt()
         val numOcupados = (totalEstacoes * DistribuicaoStatus.PERCENTUAL_OCUPADO).toInt()
-        val numReservados = totalEstacoes - numLivres - numOcupados // Resto vai para reservado
+
 
         // Embaralha a lista para distribuir status aleatoriamente
         val estacoesEmbaralhadas = estacoes.shuffled()
