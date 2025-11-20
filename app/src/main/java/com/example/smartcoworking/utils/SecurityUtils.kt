@@ -6,6 +6,10 @@ object SecurityUtils {
     /**
      * Gera um hash SHA-256 da senha fornecida.
      *
+     * Este método implementa o requisito de segurança de criptografia de senha
+     * utilizando o algoritmo SHA-256, garantindo que as senhas não sejam
+     * armazenadas em texto plano.
+     *
      * @param senha A senha em texto plano
      * @return O hash da senha em formato hexadecimal
      */

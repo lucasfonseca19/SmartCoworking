@@ -48,6 +48,16 @@ class LoginViewModel : ViewModel() {
             _uiState.value = LoginUiState.Loading
             delay(1500) // Simulate network delay
 
+            if (!isValidEmail(_email.value)) {
+                _uiState.value = LoginUiState.Error("Formato de email inválido")
+                return@launch
+            }
+
+            if (!isValidPassword(_senha.value)) {
+                _uiState.value = LoginUiState.Error("A senha deve ter pelo menos 6 caracteres")
+                return@launch
+            }
+
             val emailValido = _email.value == mockUser.email
             val senhaValida = SecurityUtils.verificarSenha(_senha.value, mockUser.senhaHash)
 
@@ -57,6 +67,15 @@ class LoginViewModel : ViewModel() {
                 _uiState.value = LoginUiState.Error("Email ou senha incorretos")
             }
         }
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+        return email.matches(emailRegex.toRegex())
+    }
+
+    private fun isValidPassword(password: String): Boolean {
+        return password.length >= 6
     }
 }
 

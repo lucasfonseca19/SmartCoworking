@@ -45,13 +45,41 @@ class LoginViewModelTest {
     fun `login with incorrect credentials updates state to Error`() = runTest {
         val viewModel = LoginViewModel()
         
-        viewModel.onEmailChange("wrong@email.com")
-        viewModel.onSenhaChange("123456")
+        viewModel.onEmailChange("lucas@smartcoworking.com") // Valid email
+        viewModel.onSenhaChange("wrongpass") // Valid length, wrong pass
         
         viewModel.login()
         testDispatcher.scheduler.advanceUntilIdle()
         
         assertTrue(viewModel.uiState.value is LoginUiState.Error)
         assertEquals("Email ou senha incorretos", (viewModel.uiState.value as LoginUiState.Error).message)
+    }
+
+    @Test
+    fun `login with invalid email format updates state to Error`() = runTest {
+        val viewModel = LoginViewModel()
+
+        viewModel.onEmailChange("invalid-email")
+        viewModel.onSenhaChange("123456")
+
+        viewModel.login()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is LoginUiState.Error)
+        assertEquals("Formato de email inválido", (viewModel.uiState.value as LoginUiState.Error).message)
+    }
+
+    @Test
+    fun `login with short password updates state to Error`() = runTest {
+        val viewModel = LoginViewModel()
+
+        viewModel.onEmailChange("lucas@smartcoworking.com")
+        viewModel.onSenhaChange("123")
+
+        viewModel.login()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is LoginUiState.Error)
+        assertEquals("A senha deve ter pelo menos 6 caracteres", (viewModel.uiState.value as LoginUiState.Error).message)
     }
 }
