@@ -58,7 +58,7 @@ fun LoginScreen(
         ) {
             // Logo / Title Area
             Text(
-                text = "Smart Coworking",
+                text = "Smart Reserve",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
