@@ -29,6 +29,13 @@ class LoginViewModel : ViewModel() {
         senhaHash = SecurityUtils.hashSenha("123456") // Password is "123456"
     )
 
+    private val demoUser = Usuario(
+        id = "2",
+        nome = "Usuário Demo",
+        email = "demo@smartcoworking.com",
+        senhaHash = SecurityUtils.hashSenha("demo123")
+    )
+
     fun onEmailChange(newEmail: String) {
         _email.value = newEmail
         if (_uiState.value is LoginUiState.Error) {
@@ -41,6 +48,11 @@ class LoginViewModel : ViewModel() {
         if (_uiState.value is LoginUiState.Error) {
             _uiState.value = LoginUiState.Idle
         }
+    }
+
+    fun fillDemoCredentials() {
+        onEmailChange(demoUser.email)
+        onSenhaChange("demo123")
     }
 
     fun login() {
@@ -58,10 +70,9 @@ class LoginViewModel : ViewModel() {
                 return@launch
             }
 
-            val emailValido = _email.value == mockUser.email
-            val senhaValida = SecurityUtils.verificarSenha(_senha.value, mockUser.senhaHash)
-
-            if (emailValido && senhaValida) {
+            val user = if (_email.value == mockUser.email) mockUser else if (_email.value == demoUser.email) demoUser else null
+            
+            if (user != null && SecurityUtils.verificarSenha(_senha.value, user.senhaHash)) {
                 _uiState.value = LoginUiState.Success
             } else {
                 _uiState.value = LoginUiState.Error("Email ou senha incorretos")
